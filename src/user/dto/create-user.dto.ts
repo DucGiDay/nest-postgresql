@@ -2,6 +2,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsString,
+  IsOptional
 } from 'class-validator';
 
 // create-user-dto
@@ -9,6 +10,7 @@ export class CreateUserDto {
   @IsString()
   fullName: string;
 
+  @IsOptional()
   @IsEmail()
   email: string;
 
@@ -20,6 +22,7 @@ export class CreateUserDto {
   @IsString()
   password: string;
 
+  @IsOptional()
   @IsString()
   avatarUrl: string;
 }
