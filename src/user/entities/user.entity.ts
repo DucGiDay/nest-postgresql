@@ -4,38 +4,48 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  // BeforeInsert
+  BeforeInsert,
+  ManyToMany,
+  JoinTable
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
+import * as bcrypt from 'bcrypt';
 
+import { Role } from '../../role/entities/role.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'full_name' })
+  @Column({ name: 'full_name', nullable: true })
   fullName: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   email: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: false })
   username: string;
 
-  @Column()
+  @Exclude() // Không bị return ở response
+  @Column({ nullable: false })
   password: string;
 
-  @Column({name: 'avatar_url'})
+  @Column({ name: 'avatar_url', nullable: true })
   avatarUrl: string;
 
-  @CreateDateColumn({name: 'created_at',  type: 'timestamp' })
+  @ManyToMany(() => Role, (role) => role.users)
+  @JoinTable() // Tạo bảng trung gian user_roles
+  roles: Role[];
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({name: 'updated_at', type: 'timestamp' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
   updatedAt: Date;
 
-  // @BeforeInsert()
-  // async hashPassword() {
-  //   const salt = await bcrypt.genSalt(10);
-  //   this.password = await bcrypt.hash(this.password, salt);
-  // }
+  @BeforeInsert()
+  async hashPassword() {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
 }

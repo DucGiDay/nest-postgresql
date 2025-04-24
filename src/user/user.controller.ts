@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto, UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('user')
 export class UserController {
@@ -28,23 +29,24 @@ export class UserController {
   }
 
   @Get()
-  async findAll() {
+  async findAll(@Query('page') page: number, @Query('limit') limit: number) {
     try {
       const data =
-        await this.userService.findAll();
+        await this.userService.findAll(page, limit);
       return {
         success: true,
         data,
-        message: 'User Fetched Successfully',
+        message: 'Get Users Successfully',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message,
+        error
       };
     }
   }
-  
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {
@@ -54,12 +56,13 @@ export class UserController {
       return {
         success: true,
         data,
-        message: 'User Fetched Successfully',
+        message: 'Get User Successfully',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message,
+        error
       };
     }
   }
@@ -98,6 +101,47 @@ export class UserController {
       return {
         success: false,
         message: error.message,
+      };
+    }
+  }
+
+  @Patch(':id/change-password')
+  async changePassword(
+    @Param('id') id: number,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    try {
+      const { oldPassword, newPassword } = changePasswordDto;
+      const dataResponse = await this.userService.changePassword(id, oldPassword, newPassword);
+      return {
+        success: true,
+        message: dataResponse,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.message,
+        error
+      };
+    }
+  }
+
+  @Patch(':id/assign-roles')
+  async assignRoles(
+    @Param('id') id: number,
+    @Body('roleIds') roleIds: number[],
+  ) {
+    try {
+      const dataResponse = await this.userService.assignRoles(id, roleIds);
+      return {
+        success: true,
+        message: dataResponse,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.message,
+        error
       };
     }
   }
