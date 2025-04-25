@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 
 import { RoleService } from './role.service';
-import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { Role } from './entities/role.entity';
 import { successResponse, errorResponse } from '../common/utils/response.utils';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 
 @Controller('role')
 export class RoleController {
@@ -16,17 +17,18 @@ export class RoleController {
       const dataResponse = await this.roleService.create(data);
       return successResponse(dataResponse)
     } catch (error) {
-      errorResponse(error)
+      return errorResponse(error)
     }
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
   async findAll() {
     try {
       const dataResponse = await this.roleService.findAll();
       return successResponse(dataResponse)
     } catch (error) {
-      errorResponse(error)
+      return errorResponse(error)
     }
   }
 

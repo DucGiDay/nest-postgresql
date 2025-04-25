@@ -1,6 +1,6 @@
 import { HttpException, Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import { instanceToPlain } from 'class-transformer';
 import * as bcrypt from 'bcrypt';
 import _ from 'lodash';
@@ -13,6 +13,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { Role } from '../role/entities/role.entity';
 
+// interface
+import { FindAllParams } from '../common/interface/user.interface'
 
 @Injectable()
 export class UserService {
@@ -32,13 +34,24 @@ export class UserService {
   }
 
   // `This action returns all user`
-  async findAll(page: number = 1, limit: number = 10): Promise<User[]> {
+  async findAll(params: FindAllParams) {
+    const { page = 1, limit = 10, keyword } = params;
     const skip = (page - 1) * limit;
-    const users = await this.userRepository.find({
+
+    const where = keyword
+      ? [
+        { username: ILike(`%${keyword}%`) },
+        { fullName: ILike(`%${keyword}%`) },
+      ]
+      : undefined;
+
+    const [users, total] = await this.userRepository.findAndCount({
       skip,
       take: limit,
+      where,
     });
-    return users.map(user => instanceToPlain(user)) as User[];
+    const sanitizedUsers = users.map(user => instanceToPlain(user)) as User[];
+    return { data: sanitizedUsers, total };
   }
 
   // `This action returns a #${id} user`

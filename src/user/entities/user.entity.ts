@@ -6,12 +6,14 @@ import {
   UpdateDateColumn,
   BeforeInsert,
   ManyToMany,
+  OneToMany,
   JoinTable
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import * as bcrypt from 'bcrypt';
 
 import { Role } from '../../role/entities/role.entity';
+import { RefreshToken } from 'src/auth/entities/auth.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -36,6 +38,9 @@ export class User {
   @ManyToMany(() => Role, (role) => role.users)
   @JoinTable() // Tạo bảng trung gian user_roles
   roles: Role[];
+
+  @OneToMany(() => RefreshToken, (refreshToken) => refreshToken.user)
+  refreshTokens: RefreshToken[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;

@@ -1,12 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
 
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ChangePasswordDto, UpdateUserDto } from './dto/update-user.dto';
-
+import { FindAllParams } from '../common/interface/user.interface';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) { }
+
 
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
@@ -25,14 +29,14 @@ export class UserController {
         message: error.message,
       };
     }
-    // return this.userService.create(createUserDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
-  async findAll(@Query('page') page: number, @Query('limit') limit: number) {
+  async findAll(@Query('') params: FindAllParams) {
     try {
       const data =
-        await this.userService.findAll(page, limit);
+        await this.userService.findAll(params);
       return {
         success: true,
         data,
@@ -47,6 +51,7 @@ export class UserController {
     }
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {
@@ -67,6 +72,7 @@ export class UserController {
     }
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -89,6 +95,7 @@ export class UserController {
     }
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(':id')
   async remove(@Param('id') id: string) {
     try {
@@ -105,6 +112,7 @@ export class UserController {
     }
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id/change-password')
   async changePassword(
     @Param('id') id: number,
@@ -126,6 +134,8 @@ export class UserController {
     }
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Patch(':id/assign-roles')
   async assignRoles(
     @Param('id') id: number,
