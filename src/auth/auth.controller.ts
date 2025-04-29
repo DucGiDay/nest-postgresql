@@ -1,8 +1,9 @@
 import { Controller, Post, Body } from '@nestjs/common';
+
 import { AuthService } from './auth.service';
-import { LoginBody } from './interface/auth.interface';
 import { errorResponse, successResponse } from 'src/common/utils/response.utils';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { LoginFormDto } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -17,26 +18,21 @@ export class AuthController {
         createUserDto,
       );
 
-      return {
-        success: true,
+      return successResponse({
         message: 'Register Successfully',
-      };
+      })
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+      return errorResponse({ error })
     }
   }
 
   @Post('login')
-  async login(@Body() data: LoginBody) {
+  async login(@Body() data: LoginFormDto) {
     try {
-
       const dataResponse = await this.authService.login(data);
-      return successResponse(dataResponse)
+      return successResponse({ data: dataResponse })
     } catch (error) {
-      return errorResponse(error)
+      return errorResponse({ error })
     }
   }
 
@@ -44,9 +40,9 @@ export class AuthController {
   async refresh(@Body() body: { refreshToken: string }) {
     try {
       const dataResponse = await this.authService.refresh(body.refreshToken);
-      return successResponse(dataResponse)
+      return successResponse({ data: dataResponse })
     } catch (error) {
-      return errorResponse(error)
+      return errorResponse({ error })
     }
   }
 }

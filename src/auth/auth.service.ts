@@ -1,4 +1,4 @@
-import { HttpException, Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {  Injectable,  UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,10 +7,10 @@ import * as bcrypt from 'bcrypt';
 import _ from 'lodash'
 import { instanceToPlain } from 'class-transformer';
 
-import { LoginBody } from './interface/auth.interface';
 import { User } from 'src/user/entities/user.entity';
 import { RefreshToken } from './entities/auth.entity';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { LoginFormDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -25,12 +25,14 @@ export class AuthService {
   ) { }
 
   async register(createUserDto: CreateUserDto): Promise<User> {
-    const user = await this.userRepository.save(createUserDto);
+    const user = this.userRepository.create(createUserDto);
+    
+    const savedUser = await this.userRepository.save(user);
 
-    return _.omit(user, ['password']);
+    return instanceToPlain(savedUser) as User;
   }
 
-  async login(req: LoginBody) {
+  async login(req: LoginFormDto) {
     const { username, password } = req
     const user = await this.userRepository
       .createQueryBuilder('user')

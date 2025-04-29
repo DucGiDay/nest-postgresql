@@ -1,17 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Delete, Query, UseGuards, Post } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { ChangePasswordDto, UpdateUserDto } from './dto/update-user.dto';
-import { FindAllParams } from '../common/interface/user.interface';
+import { AssignRoleDto, ChangePasswordDto, UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { errorResponse, successResponse } from '../common/utils/response.utils';
+import { findAllParamDto } from './dto/request-user.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import { CreateUserDto } from './dto/create-user.dto';
+@ApiTags('users')
+@ApiBearerAuth()
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
-
+  @ApiOperation({ summary: 'Tạo mới người dùng' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     try {
@@ -19,35 +24,28 @@ export class UserController {
         createUserDto,
       );
 
-      return {
-        success: true,
-        message: 'User Created Successfully',
-      };
+      return successResponse({
+        message: 'Register Successfully',
+      })
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+      return errorResponse({ error })
     }
   }
 
+  @ApiOperation({ summary: 'Lấy danh sách người dùng' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
-  async findAll(@Query('') params: FindAllParams) {
+  async findAll(@Query() params: findAllParamDto) {    
     try {
       const data =
         await this.userService.findAll(params);
-      return {
-        success: true,
+
+      return successResponse({
         data,
         message: 'Get Users Successfully',
-      };
+      })
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-        error
-      };
+      return errorResponse({ error })
     }
   }
 
@@ -58,17 +56,13 @@ export class UserController {
       const data = await this.userService.findOne(
         +id,
       );
-      return {
-        success: true,
+
+      return successResponse({
         data,
         message: 'Get User Successfully',
-      };
+      })
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-        error
-      };
+      return errorResponse({ error })
     }
   }
 
@@ -83,15 +77,12 @@ export class UserController {
         +id,
         updateUserDto,
       );
-      return {
-        success: true,
+
+      return successResponse({
         message: 'User Updated Successfully',
-      };
+      })
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+      return errorResponse({ error })
     }
   }
 
@@ -100,19 +91,18 @@ export class UserController {
   async remove(@Param('id') id: string) {
     try {
       await this.userService.remove(+id);
-      return {
-        success: true,
+
+      return successResponse({
         message: 'User Deleted Successfully',
-      };
+      })
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+      return errorResponse({ error })
     }
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  // Đổi mật khẩu
+  @ApiOperation({ summary: 'Đổi password' })
+  @UseGuards(JwtAuthGuard)
   @Patch(':id/change-password')
   async changePassword(
     @Param('id') id: number,
@@ -121,21 +111,20 @@ export class UserController {
     try {
       const { oldPassword, newPassword } = changePasswordDto;
       const dataResponse = await this.userService.changePassword(id, oldPassword, newPassword);
-      return {
-        success: true,
+
+      return successResponse({
         message: dataResponse,
-      };
+      })
     } catch (error) {
-      return {
-        success: false,
-        message: error?.message,
-        error
-      };
+      return errorResponse({ error })
     }
   }
 
+  // Chỉ định role
+  @ApiBody({ type: AssignRoleDto })
+  @ApiOperation({ summary: 'Chỉ định role cho người dùng' })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_USER')
   @Patch(':id/assign-roles')
   async assignRoles(
     @Param('id') id: number,
@@ -143,16 +132,13 @@ export class UserController {
   ) {
     try {
       const dataResponse = await this.userService.assignRoles(id, roleIds);
-      return {
-        success: true,
-        message: dataResponse,
-      };
+
+      return successResponse({
+        data: dataResponse,
+        message: 'Assign Roles Successfully'
+      })
     } catch (error) {
-      return {
-        success: false,
-        message: error?.message,
-        error
-      };
+      return errorResponse({ error })
     }
   }
 }

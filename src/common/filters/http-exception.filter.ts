@@ -1,4 +1,5 @@
-import { ExceptionFilter, Catch, ArgumentsHost, BadRequestException, HttpException } from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, BadRequestException, HttpException, NotFoundException } from '@nestjs/common';
+import { errorResponse } from '../utils/response.utils';
 
 @Catch(BadRequestException)
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -8,10 +9,23 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const status = exception.getStatus();
     const exceptionResponse = exception.getResponse();
 
-    response.status(status).json({
-      success: false,
-      message: `Internal server error: ${exceptionResponse['message'] || exceptionResponse}`,
+    // Tùy chỉnh response cho lỗi 404
+    // if (exception instanceof NotFoundException) {
+    //   response.status(status).json({
+    //     success: false,
+    //     status: status,
+    //     message: 'API not found',
+    //     error: exceptionResponse,
+    //     timestamp: new Date().toISOString(),
+    //   });
+    //   return;
+    // }
+
+    // Xử lý các lỗi khác (ví dụ như không pass validate trong dto)
+    const responseJson = errorResponse({
       error: exceptionResponse,
-    });
+      message: `Internal server error: ${exceptionResponse['message'] || exceptionResponse}`,
+    })
+    response.status(status).json(responseJson);
   }
 }

@@ -13,8 +13,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { Role } from '../role/entities/role.entity';
 
-// interface
-import { FindAllParams } from '../common/interface/user.interface'
+import { findAllParamDto } from './dto/request-user.dto';
 
 @Injectable()
 export class UserService {
@@ -28,14 +27,16 @@ export class UserService {
 
   // 'This action adds a new user';
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const user = await this.userRepository.save(createUserDto);
+    const user = this.userRepository.create(createUserDto);
 
-    return _.omit(user, ['password']);
+    const savedUser = await this.userRepository.save(user);
+
+    return instanceToPlain(savedUser) as User;
   }
 
   // `This action returns all user`
-  async findAll(params: FindAllParams) {
-    const { page = 1, limit = 10, keyword } = params;
+  async findAll(params: findAllParamDto) {
+    const { page = -1, limit = -1, keyword } = params;
     const skip = (page - 1) * limit;
 
     const where = keyword
@@ -45,23 +46,35 @@ export class UserService {
       ]
       : undefined;
 
-    const [users, total] = await this.userRepository.findAndCount({
-      skip,
-      take: limit,
+    // Nếu truyền page, limit thì phân trang, ngược lại thì trả tất cả
+    const paginage =
+      page == -1 || limit == -1
+        ? null : {
+          skip,
+          take: limit,
+        }
+
+    const payload = {
+      ...paginage,
       where,
-    });
+    }
+
+    const [users, total] = await this.userRepository.findAndCount(payload);
     const sanitizedUsers = users.map(user => instanceToPlain(user)) as User[];
     return { data: sanitizedUsers, total };
   }
 
   // `This action returns a #${id} user`
-  async findOne(id: number): Promise<User> {
+  async findOne(id: number, isShowPassword: boolean = false): Promise<User> {
     const userData = await this.userRepository.findOne({
       where: { id },
       relations: ['roles'],
     });
     if (!userData) {
       throw new HttpException('User Not Found', 404);
+    }
+    if (isShowPassword) {
+      return userData
     }
     return instanceToPlain(userData) as User;
   }
@@ -78,7 +91,7 @@ export class UserService {
   }
 
   async changePassword(id: number, oldPassword: string, newPassword: string): Promise<string> {
-    const user = await this.findOne(id);
+    const user = await this.findOne(id, true);
     const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
     if (!isPasswordValid) {
       throw new BadRequestException('Old password incorrect');
